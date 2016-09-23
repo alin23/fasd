@@ -481,8 +481,8 @@ $(fasd --backend $each)"
   --backend)
     case $2 in
       native) cat "$_FASD_DATA";;
-      sublime-files) jq '.settings.new_window_settings.file_history|reverse|keys[] as $k|"\(.[$k])|\($k+1)"' "$_FASD_SUBLIME" -r;;
-      sublime-folders) jq '.folder_history|reverse|keys[] as $k|"\(.[$k])|\($k+1)"' "$_FASD_SUBLIME" -r;;
+      sublime-files) tr -d '\t' <"$_FASD_SUBLIME" | jq '.settings.new_window_settings.file_history|reverse|keys[] as $k|"\(.[$k])|\($k+1)"' -r;;
+      sublime-folders) tr -d '\t' <"$_FASD_SUBLIME" | jq '.folder_history|reverse|keys[] as $k|"\(.[$k])|\($k+1)"' "$_FASD_SUBLIME" -r;;
       viminfo)
         < "$_FASD_VIMINFO" sed -n '/^>/{s@~@'"$HOME"'@
           s/^..//
