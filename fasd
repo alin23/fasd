@@ -52,7 +52,7 @@ fasd() {
           [ -z "$_FASD_BACKENDS" ] && _FASD_BACKENDS=native
           [ -z "$_FASD_FUZZY" ] && _FASD_FUZZY=2
           [ -z "$_FASD_VIMINFO" ] && _FASD_VIMINFO="$HOME/.viminfo"
-          [ -z "$_FASD_SUBLIME" ] && _FASD_SUBLIME="$HOME/Library/Application Support/Sublime Text 3/Local/Session.sublime_session"
+          [ -z "$_FASD_SUBLIME" ] && _FASD_SUBLIME="$HOME/Library/Application Support/Sublime Text 3/Local/"
           [ -z "$_FASD_RECENTLY_USED_XBEL" ] && \
             _FASD_RECENTLY_USED_XBEL="$HOME/.local/share/recently-used.xbel"
 
@@ -481,8 +481,8 @@ $(fasd --backend $each)"
   --backend)
     case $2 in
       native) cat "$_FASD_DATA";;
-      sublime-files) tr -d '\t' <"$_FASD_SUBLIME" | jq '.settings.new_window_settings.file_history|reverse|keys[] as $k|"\(.[$k])|\($k+1)"' -r;;
-      sublime-folders) tr -d '\t' <"$_FASD_SUBLIME" | jq '.folder_history|reverse|keys[] as $k|"\(.[$k])|\($k+1)"' "$_FASD_SUBLIME" -r;;
+      sublime-files) find "$_FASD_SUBLIME" -name *.sublime_session* -exec sh -c "tr -d '\t' <\"{}\" | jq '.settings.new_window_settings.file_history|reverse|keys[] as \$k|\"\(.[\$k])|\(\$k+1)\"' -r" \; ;;
+      sublime-folders) find "$_FASD_SUBLIME" -name *.sublime_session* -exec sh -c "tr -d '\t' <\"{}\" | jq '.folder_history|reverse|keys[] as \$k|\"\(.[\$k])|\(\$k+1)\"' -r" \; ;;
       viminfo)
         < "$_FASD_VIMINFO" sed -n '/^>/{s@~@'"$HOME"'@
           s/^..//
