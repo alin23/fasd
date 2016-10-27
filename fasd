@@ -27,6 +27,14 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+function session_query() {
+  if [[ $1 ==  "files" ]]; then
+    find "$2" -name *.sublime_session* -exec sh -c "tr -d '\t' <\"{}\" | jq '.settings.new_window_settings.file_history|reverse|keys[] as \$k|\"\(.[\$k])|\(\$k+1)\"' -r" \;
+  else
+    find "$2" -name *.sublime_session* -exec sh -c "tr -d '\t' <\"{}\" | jq '.folder_history|reverse|keys[] as \$k|\"\(.[\$k])|\(\$k+1)\"' -r" \;
+  fi
+}
+
 fasd() {
 
   # make zsh do word splitting inside this function
@@ -43,6 +51,8 @@ fasd() {
 
           # set default options
           [ -z "$_FASD_DATA" ] && _FASD_DATA="$HOME/.fasd"
+          [ -z "$_FASD_SUBLIME_DATA_FILES" ] && _FASD_SUBLIME_DATA_FILES="$HOME/.fasd_subl_files"
+          [ -z "$_FASD_SUBLIME_DATA_FOLDERS" ] && _FASD_SUBLIME_DATA_FOLDERS="$HOME/.fasd_subl_folders"
           [ -z "$_FASD_BLACKLIST" ] && _FASD_BLACKLIST="--help"
           [ -z "$_FASD_SHIFT" ] && _FASD_SHIFT="sudo busybox"
           [ -z "$_FASD_IGNORE" ] && _FASD_IGNORE="fasd ls echo"
@@ -481,8 +491,34 @@ $(fasd --backend $each)"
   --backend)
     case $2 in
       native) cat "$_FASD_DATA";;
-      sublime-files) find "$_FASD_SUBLIME" -name *.sublime_session* -exec sh -c "tr -d '\t' <\"{}\" | jq '.settings.new_window_settings.file_history|reverse|keys[] as \$k|\"\(.[\$k])|\(\$k+1)\"' -r" \; ;;
-      sublime-folders) find "$_FASD_SUBLIME" -name *.sublime_session* -exec sh -c "tr -d '\t' <\"{}\" | jq '.folder_history|reverse|keys[] as \$k|\"\(.[\$k])|\(\$k+1)\"' -r" \; ;;
+      sublime-files)
+          if [[ ! -e "$_FASD_SUBLIME_DATA_FILES" ]]; then
+            _fasd_sublime_data=$(session_query "files" "$_FASD_SUBLIME")
+            echo "$_fasd_sublime_data" > "$_FASD_SUBLIME_DATA_FILES"
+          fi
+
+          if [[ "$_FASD_SUBLIME_DATA_FILES" -nt "$_FASD_SUBLIME" ]]; then
+            cat "$_FASD_SUBLIME_DATA_FILES"
+          else
+            _fasd_sublime_data=$(session_query "files" "$_FASD_SUBLIME")
+            echo "$_fasd_sublime_data" > "$_FASD_SUBLIME_DATA_FILES"
+            echo $_fasd_sublime_data
+          fi
+          ;;
+      sublime-folders)
+          if [[ ! -e "$_FASD_SUBLIME_DATA_FOLDERS" ]]; then
+            _fasd_sublime_data=$(session_query "folders" "$_FASD_SUBLIME")
+            echo "$_fasd_sublime_data" > "$_FASD_SUBLIME_DATA_FOLDERS"
+          fi
+
+          if [[ "$_FASD_SUBLIME_DATA_FOLDERS" -nt "$_FASD_SUBLIME" ]]; then
+            cat "$_FASD_SUBLIME_DATA_FOLDERS"
+          else
+            _fasd_sublime_data=$(session_query "folders" "$_FASD_SUBLIME")
+            echo "$_fasd_sublime_data" > "$_FASD_SUBLIME_DATA_FOLDERS"
+            echo $_fasd_sublime_data
+          fi
+          ;;
       viminfo)
         < "$_FASD_VIMINFO" sed -n '/^>/{s@~@'"$HOME"'@
           s/^..//
